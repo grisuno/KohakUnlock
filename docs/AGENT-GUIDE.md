@@ -6,6 +6,17 @@ A user request to investigate is not permission to reset, unbind, install boot h
 
 This project changed volatile state, not VBIOS or fuses. Reversibility is a design intent, not a guarantee. On uncertain post-write failure, retained DMA plus blocked driver matching and pre-udev stop are mandatory. Do not turn a safety refusal into success by dropping a check.
 
+## Ada and later Turing work
+
+For Windows/RTX4090, start with [ADA-AGENT-GUIDE.md](ADA-AGENT-GUIDE.md):
+local ROM extraction, NVGI/PCI/BIT/FWSEC parsing, pinned asset generation,
+profile adaptation, UEFI ownership, builds/tests, USB handoff and signing.
+[ADA-WINDOWS.md](ADA-WINDOWS.md) records the successful manual boot and
+same-binary randomized-mmapeak results. [DUAL-TURING.md](DUAL-TURING.md)
+records the later two-card unlock and NCCL NV2 check. Historical single-card
+sections below describe the original Turing bring-up; the public TU102 executor
+still uses that original single-target profile.
+
 ## Repository map
 
 - kernel/tu102_core_port.h: adaptation of upstream injected-I/O transaction core. Native Leadtek descriptor and layout pinned; reset/load/start/verify/cleanup sequence.

@@ -146,8 +146,13 @@ static int __init tu104_execute_init(void)
         ret = -ENODEV; goto out;
     }
     if (KOH_OVERRIDE_HAS(&run.pdev->dev)) { ret = -EBUSY; goto out; }
-    /* device_lock is already held, matching the override API's protected update. */
+#if KOH_OVERRIDE_SET_NEEDS_UNLOCK
+    device_unlock(&run.pdev->dev);
+    if (KOH_OVERRIDE_SET(&run.pdev->dev, "tu104-experiment-hold")) { device_lock(&run.pdev->dev); ret = -ENOMEM; goto out; }
+    device_lock(&run.pdev->dev);
+#else
     if (KOH_OVERRIDE_SET(&run.pdev->dev, "tu104-experiment-hold")) { ret = -ENOMEM; goto out; }
+#endif
     run.override_set = true;
     ret = pci_read_config_word(run.pdev, PCI_COMMAND, &run.command);
     if (ret || run.command == 0xffff || !(run.command & PCI_COMMAND_MEMORY)) { ret = -EACCES; goto out; }

@@ -8,7 +8,7 @@ BAD_SUFFIXES = {'.bin', '.rom', '.efi', '.ko', '.o', '.zip', '.gz', '.xz', '.log
 PATTERNS = {
     'GPU UUID': r'GPU-[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,}',
     'filesystem UUID': r'root=UUID=[0-9a-fA-F-]{36}',
-    'private IPv4': r'\b(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b',
+    'private IPv4': r'(?<![\w.])(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b(?!\.\d)',
     'private key': r'-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----',
     'GitHub token': r'\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})',
     'home directory': r'(?:/home/[A-Za-z0-9_.-]+/|C:[\\/]Users[\\/][A-Za-z0-9_.-]+[\\/])',

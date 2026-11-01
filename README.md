@@ -2,7 +2,13 @@
 
 **Source-first research on volatile NVIDIA tensor-compute unlocks. Not a universal GPU unlocker.**
 
-This repository documents a successful **Linux/initramfs port for one VRAM-modified Leadtek RTX 2080 Ti (11 GB → 22 GB; 22 GiB reported)** and running the upstream Ampere unlock on four RTX 3090s. It includes Turing source, offline tests, ROM analysis, inventory tooling, and a fail-closed boot-hook template. It does **not** include firmware blobs, ROM dumps, prebuilt kernel/EFI binaries, a flash utility, or an automatic installer.
+**RTX 2080 Ti Linux/initramfs and RTX 4090 Windows/UEFI unlocks**, with RTX 3090 upstream deployment experience. Includes source, offline tests, firmware/ROM analysis guidance, boot workflow documentation and measured results.
+
+- **2080 Ti:** physically VRAM-modded Leadtek cards, **11 GB → 22 GB**.
+- **4090:** AD102 USB EFI transaction, stock Windows NVIDIA driver handoff, runtime-randomized instruction benchmarks.
+- **3090:** four-card deployment using the upstream Ampere implementation.
+
+Firmware, ROM dumps, signing keys and compiled kernel/EFI binaries stay local.
 
 **Risk:** experimental privileged firmware execution can hang a GPU or host, prevent boot, corrupt data, or damage hardware. There is no guarantee of recovery. Have physical/BMC console and power control. Never experiment on an active workload. Editing IDs or removing guards does not validate a new card.
 
@@ -15,6 +21,9 @@ This repository documents a successful **Linux/initramfs port for one VRAM-modif
 | 2080 Ti FP16→FP32 `mmapeak`, 32×8×16 | 59.9 TFLOPS | 111.0 TFLOPS | Same card before/after; +85.3% |
 | 2080 Ti FP16→FP16 control | 119.5 TFLOPS | 118.5 TFLOPS | Same card; essentially unchanged |
 | 2080 Ti best MAMF median, 125-shape sweep | 57.71 TFLOPS | 88.24 TFLOPS | Two same-model cards; +52.9%, not same-card A/B |
+| 4090 FP16→FP32 randomized `mmapeak` | 178.9 TFLOPS | 331.5 TFLOPS | Same card/binary; +85.3% |
+| 4090 BF16→FP32 randomized `mmapeak` | 179.0 TFLOPS | 330.9 TFLOPS | Same card/binary; +84.9% |
+| 4090 FP16 MAMF Finder, best median of 125 shapes | ~160 TFLOPS | 243.9 TFLOPS (measured) | WSL2; 4096x5120x2048 |
 | One 3090, FP16→FP32 8192³ PyTorch GEMM | 73.03 TFLOPS | 122.76 TFLOPS | Same card; +68.1%* |
 
 *3090 power limits: 370 W stock / 360 W unlocked. [Measurement details](docs/RESULTS.md#ampere).
@@ -29,6 +38,16 @@ See [results and limitations](docs/RESULTS.md). A successful kernel log alone is
 4. [3090 experience](docs/AMPERE.md): upstream and known-working revision
 5. [RTX 2060 (TU104) port](docs/TU104-2060.md): source-level port, unvalidated; per-card profile generation
 6. [Licensing/provenance](NOTICE.md)
+5. [4090 Windows/UEFI source, results and references](docs/ADA-WINDOWS.md)
+6. [Agent-oriented Ada porting guide](docs/ADA-AGENT-GUIDE.md): inventory, ROM extraction, FWSEC parsing, profile adaptation, ownership, tests and signing
+7. [Licensing/provenance](NOTICE.md)
+
+### Benchmark implementation
+
+4090 results use [our mmapeak fork](https://github.com/KohakuBlueleaf/mmapeak).
+The original compile-time all-zero fragments allowed the compiler to collapse
+identical tile calculations while the host still counted full-tile FLOPs in inspected
+builds. Our fork uses runtime-randomized inputs. See the [analysis and pinned revision](docs/ADA-WINDOWS.md#original-mmapeak-zero-input-issue).
 
 ### Offline entry points
 
@@ -62,12 +81,15 @@ Inventory uses OS metadata and `nvidia-smi`, not BAR mmap or resets. Output is p
 
 ## Tested boundary
 
-- One Leadtek TU102 rev a1: `10de:1e04 / 107d:1e04`, VBIOS `90.02.33.00.3F`, VRAM-modded to 22 GiB, 68 SMs; kernel 6.8.0-147 and NVIDIA open 595.99.02. Second same-model card was the locked control, **not a second validated unlock**.
+- Two Leadtek TU102 rev a1 cards: `10de:1e04 / 107d:1e04`, VBIOS `90.02.33.00.3F`, physically VRAM-modded to 22 GiB, 68 SMs; kernel 6.8.0-147 and NVIDIA open 595.99.02. Both unlocked in the local sequential implementation. The public executor remains single-target.
+- Two-card NCCL all-reduce passed from 1 KiB to 64 MiB with NV2 topology, bidirectional peer access and NCCL direct P2P. At 64 MiB: **36.77 GB/s** algorithm bandwidth.
 - GIGABYTE MZ32-AR0 / AMD server, separate ASPEED display, Secure Boot disabled. Shared IOMMU group observed: no bus-wide resets.
-- Turing: **one-shot only**, no module unload path, mandatory fail-closed initramfs gate. Do not make it the permanent default.
+- Turing public reproduction: one-shot entry and mandatory initramfs gate; local combined 3090+2080Ti persistent setup was separately validated. [Dual-card notes](docs/DUAL-TURING.md).
 - Ampere: external [Zagitta/gpu-unlock](https://github.com/Zagitta/gpu-unlock); not vendored here.
 - The TU104 RTX 2060 port in this fork is **source-only and unvalidated**: offline host tests with a synthetic profile pass, but no hardware run has occurred; it requires its own PROM-derived profile (see docs/TU104-2060.md).
 - Other boards, 11 GiB variants, Windows, Ada and Blackwell: **not validated here**.
+- Ada: one RTX 4090 Windows/UEFI manual USB unlock on ASUS Pro WS W890E-SAGE SE, NVIDIA 621.01, 450 W. Signed EFI, successful trial with Secure Boot off. [Source](windows/ad102) and [results](docs/ADA-WINDOWS.md).
+- Other board profiles and Blackwell remain research targets.
 
 Public source derives from the tested source with a default-off compile gate and publication packaging changes. It is not byte-identical to the historical test binary. No public-source hardware rerun is claimed.
 
